@@ -1,6 +1,6 @@
 {
-  "name": "DTM Spin PWA",
-  "short_name": "DTMSpin",
+  "name": "무슨 운동 하지?",
+  "short_name": "운동루틴",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#111111",

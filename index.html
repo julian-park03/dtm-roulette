@@ -3,25 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>DTM Spin — PWA</title>
+  <title>무슨 운동 하지?</title>
   <meta name="theme-color" content="#111111" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <style>
     body { margin:0; font-family: system-ui, sans-serif; background:#111; color:#fff; display:flex; flex-direction:column; height:100vh;}
-    header {padding:10px; display:flex; justify-content:space-between; align-items:center;}
+    header {padding:20px; display:flex; justify-content:center; align-items:center; font-size:32px; font-weight:bold;}
     #app {flex:1; display:flex; align-items:center; justify-content:center;}
     canvas {width:90vw; max-width:600px; aspect-ratio:1; border-radius:50%; background:#222;}
-    .pin {position:absolute; top:5%; left:50%; transform:translateX(-50%); width:0;height:0; border-left:20px solid transparent; border-right:20px solid transparent; border-bottom:30px solid yellow;}
-    dialog {border:none; border-radius:12px; padding:20px; background:#222; color:#fff;}
-    button {padding:8px 12px; border-radius:8px; border:none; background:#444; color:#fff; margin:5px;}
+    .pin {position:absolute; top:2%; left:50%; transform:translateX(-50%); width:0;height:0; border-left:25px solid transparent; border-right:25px solid transparent; border-bottom:40px solid yellow;}
+    dialog {border:none; border-radius:20px; padding:40px; background:#222; color:#fff; max-width:90vw;}
+    dialog h2 {font-size:36px; margin:0 0 20px 0; text-align:center;}
+    dialog p {font-size:32px; font-weight:800; margin:0; text-align:center;}
+    button {padding:12px 18px; border-radius:10px; border:none; background:#444; color:#fff; margin:12px; font-size:18px;}
   </style>
 </head>
 <body>
-<header>
-  <h1>DTM Spin</h1>
-  <button id="btnAdmin">⚙️ Admin</button>
-</header>
+<header>무슨 운동 하지?</header>
 <div id="app">
   <div style="position:relative;">
     <div class="pin"></div>
@@ -30,7 +29,7 @@
 </div>
 
 <dialog id="dlgResult">
-  <h2 id="resultTitle">결과</h2>
+  <h2>오늘의 루틴</h2>
   <p id="resultText"></p>
   <button onclick="dlgResult.close()">닫기</button>
 </dialog>
@@ -45,7 +44,7 @@
 </dialog>
 
 <script>
-const STORAGE_KEY = "dtm.spin.routines.v2";
+const STORAGE_KEY = "dtm.spin.routines.v3";
 const ROUTINE_MAX = 100;
 let routines = loadRoutines();
 
@@ -68,7 +67,7 @@ function defaultRoutines(){
   return arr;
 }
 
-// draw wheel with 4 slots, all with "?"
+// draw wheel with 4 slots
 const canvas=document.getElementById("wheel");
 const ctx=canvas.getContext("2d");
 let angle=0, spinning=false, angularVelocity=0;
@@ -91,13 +90,12 @@ function drawWheel(){
     ctx.closePath();
     ctx.fillStyle=COLORS[i%COLORS.length];
     ctx.fill();
-    // text ?
     ctx.save();
     ctx.rotate(a0+sliceAngle/2);
     ctx.translate(radius*0.6,0);
     ctx.rotate(Math.PI/2);
     ctx.fillStyle="#000";
-    ctx.font="bold 60px sans-serif";
+    ctx.font="bold 70px sans-serif";
     ctx.textAlign="center";
     ctx.textBaseline="middle";
     ctx.fillText("?",0,0);
@@ -107,22 +105,26 @@ function drawWheel(){
 }
 drawWheel();
 
-// spin logic
+// spin logic with strong start and smooth deceleration
 canvas.addEventListener("click",()=>{
   if(spinning) return;
   spinning=true;
-  angularVelocity=15+Math.random()*5; // faster spin
+  angularVelocity=30+Math.random()*10; // very fast start
   let elapsed=0;
   let last=performance.now();
   requestAnimationFrame(function step(t){
     let dt=(t-last)/1000; last=t;
     elapsed+=dt;
-    angularVelocity*=0.95;
+    angularVelocity*=0.96;
     angle+=angularVelocity*dt;
     drawWheel();
-    if(angularVelocity<0.1 || elapsed>5){ // stop within 5s
+    if(angularVelocity<0.1 || elapsed>5){
       spinning=false;
-      angle=angle%(2*Math.PI);
+      angle=(angle%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
+      const sliceAngle=2*Math.PI/4;
+      let idx=Math.round(angle/sliceAngle) % 4;
+      angle=idx*sliceAngle;
+      drawWheel();
       showResult();
       return;
     }
@@ -131,7 +133,6 @@ canvas.addEventListener("click",()=>{
 });
 
 function showResult(){
-  // pick random non-empty routine
   let filled=routines.filter(r=>r && r.trim());
   if(filled.length===0){alert("루틴 없음");return;}
   let choice=filled[Math.floor(Math.random()*filled.length)];
@@ -139,13 +140,11 @@ function showResult(){
   dlgResult.showModal();
 }
 
-// Admin menu with password
-const btnAdmin=document.getElementById("btnAdmin");
-btnAdmin.onclick=()=>{
-  let pw=prompt("비밀번호를 입력하세요");
-  if(pw==="6260"){renderAdmin(); dlgAdmin.showModal();}
-  else alert("비밀번호가 틀렸습니다.");
-};
+// Admin menu without password
+const dlgAdmin=document.getElementById("dlgAdmin");
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="a"){renderAdmin(); dlgAdmin.showModal();}
+});
 function renderAdmin(){
   let list=document.getElementById("list");
   list.innerHTML="";
