@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <title>DTM Spin — PWA</title>
+  <meta name="theme-color" content="#111111" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <style>
+    :root {
+      --bg: #0e0f12;
+      --fg: #f3f5f7;
+      --muted: #8b8f98;
+      --accent: #6ee7ff;
+      --accent2: #b388ff;
+      --card: #17181c;
+      --ok: #00d09c;
+      --danger: #ff4861;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Noto Sans KR, Apple SD Gothic Neo, sans-serif;
+      background: linear-gradient(180deg, #0d0e11, #111317 60%, #0d0e11);
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: stretch;
+      gap: 12px;
+    }
+    header {
+      width: 100%;
+      max-width: 780px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+    }
+    header h1 {
+      font-size: 20px; margin: 0; letter-spacing: .3px;
+    }
+    header .actions {
+      display: flex; gap: 10px; align-items: center;
+    }
+    button, .btn {
+      background: var(--card);
+      color: var(--fg);
+      border: 1px solid #262830;
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.25);
+      transition: transform .05s ease;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { transform: scale(.98); }
+    #app {
+      width: 100%;
+      flex: 1;
+      display: grid;
+      place-items: center;
+      padding: 8px 16px 24px;
+    }
+    .wheel-wrap {
+      position: relative;
+      width: min(92vw, 640px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+    }
+    canvas#wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(80% 80% at 50% 50%, #1b1d24 0%, #121319 100%);
+      box-shadow: 0 12px 50px rgba(0,0,0,.45), inset 0 -6px 20px rgba(0,0,0,.35);
+      touch-action: none; /* for pointer events */
+    }
+    .pin {
+      position: absolute;
+      top: -8px; /* stick over the rim */
+      left: 50%;
+      translate: -50% 0;
+      width: 0; height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-bottom: 28px solid var(--accent);
+      filter: drop-shadow(0 3px 6px rgba(0,0,0,.6));
+    }
+    .hub {
+      position: absolute;
+      width: 22%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #20222c, #0d0f13);
+      display: grid;
+      place-items: center;
+      border: 1px solid #2a2d37;
+      box-shadow: inset 0 10px 20px rgba(0,0,0,.55), 0 6px 16px rgba(0,0,0,.35);
+    }
+    .hub .dot {
+      width: 28%;
+      aspect-ratio: 1;
+      background: var(--accent2);
+      border-radius: 50%;
+      box-shadow: 0 0 28px var(--accent2);
+    }
+    .floating {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display: flex; gap: 10px;
+    }
+    .pill {
+      position: absolute;
+      bottom: 10px; left: 50%;
+      translate: -50% 0;
+      font-size: 13px;
+      color: var(--muted);
+      background: rgba(0,0,0,.25);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #262830;
+    }
+    dialog {
+      border: none;
+      padding: 0;
+      background: transparent;
+    }
+    .modal {
+      width: min(92vw, 760px);
+      max-height: 80vh;
+      overflow: hidden;
+      background: #121319;
+      border: 1px solid #2a2d37;
+      border-radius: 16px;
+      box-shadow: 0 20px 80px rgba(0,0,0,.6);
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+    .modal header, .modal footer {
+      padding: 14px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #22242d;
+    }
+    .modal footer { border-top: 1px solid #22242d; border-bottom: none; gap: 8px; }
+    .modal main { padding: 0 16px 12px; overflow: auto; }
+    .list {
+      display: grid; gap: 6px; margin: 12px 0 18px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      gap: 8px; align-items: center;
+      background: #0e0f14;
+      border: 1px solid #20222a;
+      border-radius: 12px;
+      padding: 8px;
+    }
+    .row input[type="text"] {
+      width: 100%;
+      background: #0b0c10; color: var(--fg);
+      border: 1px solid #22242b; border-radius: 10px;
+      padding: 10px 12px; font-size: 14px;
+    }
+    .row .idx {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: grid; place-items: center; font-weight: 600;
+      background: #14161d; color: var(--muted); border: 1px solid #232630;
+    }
+    .muted { color: var(--muted); }
+    .notice { font-size: 13px; color: var(--muted); }
+    .big-popup {
+      inset: 0; margin: auto;
+      width: min(92vw, 680px);
+      background: rgba(0,0,0,.75);
+      border-radius: 20px;
+      border: 1px solid #2a2d37;
+      box-shadow: 0 30px 100px rgba(0,0,0,.6);
+      padding: 20px;
+    }
+    .big-popup h2 {
+      margin: 0 0 12px 0; font-size: clamp(26px, 6vw, 48px); line-height: 1.15;
+    }
+    .big-popup p { margin: 0; font-size: clamp(18px, 4.2vw, 28px); color: #cbd5e1; }
+    .close-x {
+      position: absolute; top: 8px; right: 10px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid #2a2d37;
+      border-radius: 10px; padding: 6px 10px; font-size: 14px;
+    }
+    .tag { padding: 4px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #2a2d37; background: #0d0e13; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DTM Spin</h1>
+    <div class="actions">
+      <button id="btnAdmin" title="Admin">⚙️ Admin</button>
+      <button id="btnInstall" style="display:none" title="Install">➕ 홈화면</button>
+    </div>
+  </header>
+
+  <div id="app">
+    <div class="wheel-wrap">
+      <div class="pin" aria-hidden="true"></div>
+      <canvas id="wheel" width="1200" height="1200" aria-label="운동 루틴 돌림판"></canvas>
+      <div class="hub"><div class="dot"></div></div>
+      <div class="pill">스와이프해서 돌리기</div>
+    </div>
+  </div>
+
+  <dialog id="dlgResult">
+    <div class="big-popup">
+      <button class="close-x" onclick="dlgResult.close()">닫기</button>
+      <h2 id="resultTitle">선택된 루틴</h2>
+      <p id="resultText"></p>
+    </div>
+  </dialog>
+
+  <dialog id="dlgAdmin">
+    <div class="modal">
+      <header>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <strong>Admin — 루틴 편집</strong>
+          <span class="tag" id="tagCount">0 / 50</span>
+        </div>
+        <div class="muted">모바일에서 편집 후 자동 저장</div>
+      </header>
+      <main>
+        <div class="notice">빈 칸은 회색으로 표시됩니다. 엔터로 다음 칸 이동. 가져오기/내보내기로 팀과 공유하세요.</div>
+        <div id="list" class="list"></div>
+      </main>
+      <footer>
+        <button id="btnExport">내보내기(JSON)</button>
+        <input id="fileImport" type="file" accept="application/json" style="display:none" />
+        <button id="btnImport">가져오기(JSON)</button>
+        <span style="flex:1"></span>
+        <button id="btnCloseAdmin">닫기</button>
+      </footer>
+    </div>
+  </dialog>
+
+<script>
+/** ---------- Storage & Defaults ---------- */
+const STORAGE_KEY = "dtm.spin.routines.v1";
+const SLICE_COUNT = 50;
+
+function defaultRoutines() {
+  // 기본 값: 일부 샘플 + 빈 칸
+  const seed = [
+    "풀업 10개", "푸쉬업 30개", "딥스 20개", "버피 30개", "스쿼트 50개",
+    "데드행 60초", "행잉 니 레이즈 20개", "푸쉬업 50개", "풀업 5개 x 3세트(휴식 60초)",
+    "런지 40개", "점프 스쿼트 30개", "버피 50개", "머슬업 3개", "딥 스쿼트 40개",
+  ];
+  const arr = new Array(SLICE_COUNT).fill("");
+  for (let i=0; i<seed.length && i<SLICE_COUNT; i++) arr[i] = seed[i];
+  return arr;
+}
+
+function loadRoutines() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultRoutines();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return defaultRoutines();
+    // Normalize length
+    const out = new Array(SLICE_COUNT).fill("");
+    for (let i=0;i<SLICE_COUNT;i++) out[i] = (parsed[i] ?? "");
+    return out;
+  } catch { return defaultRoutines(); }
+}
+
+function saveRoutines(arr) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  } catch {}
+}
+
+let routines = loadRoutines();
+
+/** ---------- Canvas Wheel ---------- */
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+canvas.width = Math.floor(canvas.width * dpr);
+canvas.height = Math.floor(canvas.height * dpr);
+canvas.style.width = "100%";
+canvas.style.height = "100%";
+ctx.scale(dpr, dpr);
+
+const size = 1200;
+const cx = size/2, cy = size/2;
+const radius = size*0.48;
+const innerRadius = size*0.16;
+const sliceAngle = (Math.PI * 2) / SLICE_COUNT;
+let angle = -Math.PI / 2; // start pointing "up"
+let spinning = false;
+let angularVelocity = 0;
+let lastTime = 0;
+
+// PRNG helper using crypto for fairness
+function randUnit() {
+  const a = new Uint32Array(1);
+  crypto.getRandomValues(a);
+  return a[0] / 0xFFFFFFFF;
+}
+
+// Draw wheel
+function drawWheel() {
+  const ctx2 = ctx;
+  ctx2.clearRect(0,0,size,size);
+
+  // Rim
+  ctx2.save();
+  ctx2.translate(cx, cy);
+  ctx2.rotate(angle);
+  for (let i=0;i<SLICE_COUNT;i++) {
+    const a0 = i * sliceAngle;
+    const a1 = a0 + sliceAngle;
+    // alternating colors
+    ctx2.beginPath();
+    ctx2.moveTo(0,0);
+    ctx2.arc(0,0,radius,a0,a1);
+    ctx2.closePath();
+    const hue = (i * 360 / SLICE_COUNT);
+    ctx2.fillStyle = `hsl(${hue}deg 60% 18%)`;
+    ctx2.fill();
+
+    // wedge separator
+    ctx2.strokeStyle = "rgba(255,255,255,.06)";
+    ctx2.lineWidth = 2;
+    ctx2.beginPath();
+    ctx2.arc(0,0,radius,a0,a1);
+    ctx2.stroke();
+
+    // label
+    const label = routines[i] || `빈칸 ${i+1}`;
+    const mid = a0 + sliceAngle/2;
+    const rText = innerRadius + (radius - innerRadius)*0.52;
+    ctx2.save();
+    ctx2.rotate(mid);
+    ctx2.translate(rText, 0);
+    ctx2.rotate(Math.PI/2);
+    ctx2.fillStyle = routines[i] ? "#e8ecf4" : "#7f8492";
+    ctx2.font = "bold 20px ui-sans-serif, system-ui, Apple SD Gothic Neo, Noto Sans KR";
+    const lines = wrapText(ctx2, label, 180);
+    lines.forEach((ln, idx)=>{
+      ctx2.fillText(ln, -ctx2.measureText(ln).width/2, (idx - (lines.length-1)/2) * 22);
+    });
+    ctx2.restore();
+  }
+  // hub hole
+  ctx2.globalCompositeOperation = "destination-out";
+  ctx2.beginPath();
+  ctx2.arc(cx, cy, innerRadius, 0, Math.PI*2);
+  ctx2.fill();
+  ctx2.globalCompositeOperation = "source-over";
+  ctx2.restore();
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(/\s+/);
+  const lines = [];
+  let line = words.shift() || "";
+  for (const w of words) {
+    const test = line + " " + w;
+    if (ctx.measureText(test).width < maxWidth) line = test;
+    else { lines.push(line); line = w; }
+  }
+  lines.push(line);
+  return lines.slice(0,3);
+}
+
+drawWheel();
+
+/** ---------- Physics spin ---------- */
+// We combine user's flick velocity + cryptographically random extra turns, to keep distribution close to uniform.
+function startSpinFromImpulse(impulse) {
+  if (spinning) return;
+  spinning = true;
+  document.body.style.cursor = "wait";
+
+  // Convert linear impulse to initial angular velocity estimate
+  // Tuned factor for good feel on phones
+  const baseVel = Math.min(Math.max(impulse / 800, 1.2), 6.0); // rad/s bounds
+
+  // Add unbiased randomness: extra full rotations + random angle
+  const extraTurns = 6 + Math.floor(randUnit()*7); // 6~12 full spins
+  const randomAngle = randUnit() * Math.PI*2;
+
+  // Target final angle = current + base component + random
+  const targetAngle = angle + baseVel * 1.2 + extraTurns * Math.PI*2 + randomAngle;
+
+  // We will simulate deceleration with constant angular friction so that we stop exactly at targetAngle
+  // Solve s = v0^2 / (2 * mu)  => choose mu so that stopping distance equals (targetAngle - angle)
+  const delta = normalizeAngle(targetAngle - angle);
+  const v0 = Math.max(baseVel, 2.0);
+  const mu = Math.max(0.4, Math.min(1.8, (v0*v0) / (2*delta))); // friction
+  angularVelocity = v0;
+
+  lastTime = performance.now();
+  requestAnimationFrame(function step(t){
+    const dt = (t - lastTime)/1000; lastTime = t;
+    // decelerate
+    angularVelocity -= mu*dt;
+    if (angularVelocity <= 0.0) {
+      angularVelocity = 0.0;
+    } else {
+      angle += angularVelocity * dt;
+    }
+    drawWheel();
+
+    if (angularVelocity <= 0.0) {
+      // Snap to nearest slice center (adds tactile feel, avoids boundary ambiguity)
+      const normalized = normalizeAngle(angle);
+      const idx = angleToIndex(normalized);
+      const snapAngle = indexCenterToAngle(idx);
+      angle = snapAngle;
+      drawWheel();
+      spinning = false;
+      document.body.style.cursor = "default";
+      showResult(idx);
+      return;
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+function normalizeAngle(a) {
+  a = a % (Math.PI*2);
+  if (a < 0) a += Math.PI*2;
+  return a;
+}
+
+// Our pointer "pin" is at -90deg (top). We rotate the wheel; selected slice is where pin intersects.
+function angleToIndex(a) {
+  // Effective angle relative to 0 at top
+  const rel = normalizeAngle(a);
+  const idx = Math.floor((rel + sliceAngle/2) / sliceAngle) % SLICE_COUNT;
+  return idx;
+}
+
+function indexCenterToAngle(idx) {
+  const center = idx * sliceAngle + sliceAngle/2;
+  // align to top (pin): angle already uses rotation of the wheel itself
+  return center;
+}
+
+/** ---------- Pointer swipe handling ---------- */
+let dragging = false;
+let points = []; // store recent pointer positions to estimate flick velocity
+
+function onPointerDown(e) {
+  if (spinning) return;
+  dragging = true;
+  points = [pt(e)];
+}
+
+function onPointerMove(e) {
+  if (!dragging || spinning) return;
+  points.push(pt(e));
+  // Keep last few
+  if (points.length > 6) points.shift();
+  // Optional: live rotate a tiny bit following finger
+  // (commented to avoid accidental micro spins)
+}
+
+function onPointerUp(e) {
+  if (!dragging || spinning) return;
+  dragging = false;
+  points.push(pt(e));
+  if (points.length < 2) return;
+
+  // Estimate flick speed along tangential direction
+  const p1 = points[points.length-2];
+  const p2 = points[points.length-1];
+  const dt = Math.max(1, p2.t - p1.t);
+  const vx = (p2.x - p1.x) / dt;
+  const vy = (p2.y - p1.y) / dt;
+
+  // Convert to tangential impulse: project velocity onto tangent at contact point
+  const center = canvas.getBoundingClientRect();
+  const cxp = center.left + center.width/2;
+  const cyp = center.top + center.height/2;
+  const rx = p2.pageX - cxp;
+  const ry = p2.pageY - cyp;
+  const rmag = Math.hypot(rx, ry) || 1;
+  // tangent vector (perpendicular to radius)
+  const tx = -ry / rmag, ty = rx / rmag;
+  const tangential = vx*tx + vy*ty;
+  const impulse = Math.abs(tangential) * 1000; // scale to px/s
+
+  // Minimum impulse threshold to prevent "soft taps"
+  startSpinFromImpulse(Math.max(impulse, 600));
+}
+
+function pt(e) {
+  const touch = e.touches?.[0] || e.changedTouches?.[0] || e;
+  return {
+    x: touch.clientX, y: touch.clientY, t: performance.now(),
+    pageX: touch.pageX, pageY: touch.pageY
+  };
+}
+
+canvas.addEventListener("pointerdown", onPointerDown, {passive:true});
+window.addEventListener("pointermove", onPointerMove, {passive:true});
+window.addEventListener("pointerup", onPointerUp, {passive:true});
+canvas.addEventListener("touchstart", onPointerDown, {passive:true});
+window.addEventListener("touchmove", onPointerMove, {passive:true});
+window.addEventListener("touchend", onPointerUp, {passive:true});
+
+/** ---------- Result Popup ---------- */
+const dlgResult = document.getElementById("dlgResult");
+const resultText = document.getElementById("resultText");
+function showResult(idx) {
+  const txt = routines[idx] || `빈칸 ${idx+1}`;
+  resultText.textContent = txt;
+  dlgResult.showModal();
+}
+
+/** ---------- Admin ---------- */
+const dlgAdmin = document.getElementById("dlgAdmin");
+const btnAdmin = document.getElementById("btnAdmin");
+const listEl = document.getElementById("list");
+const tagCount = document.getElementById("tagCount");
+const btnExport = document.getElementById("btnExport");
+const btnImport = document.getElementById("btnImport");
+const fileImport = document.getElementById("fileImport");
+document.getElementById("btnCloseAdmin").onclick = ()=> dlgAdmin.close();
+
+btnAdmin.onclick = () => {
+  renderAdmin();
+  dlgAdmin.showModal();
+};
+
+function renderAdmin() {
+  listEl.innerHTML = "";
+  let filled = 0;
+  routines.forEach((val, i)=>{
+    if (val && val.trim()) filled++;
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <div class="idx">${i+1}</div>
+      <input type="text" value="${escapeHtml(val)}" placeholder="루틴 입력 (예: 풀업 10개)"/>
+      <div style="display:flex; gap:6px;">
+        <button data-act="clear">지우기</button>
+      </div>
+    `;
+    const input = row.querySelector("input");
+    input.addEventListener("change", ()=>{
+      routines[i] = input.value.trim();
+      saveRoutines(routines);
+      tagCount.textContent = countFilled() + " / " + SLICE_COUNT;
+      drawWheel();
+    });
+    row.querySelector('[data-act="clear"]').onclick = ()=>{
+      input.value = "";
+      routines[i] = "";
+      saveRoutines(routines);
+      tagCount.textContent = countFilled() + " / " + SLICE_COUNT;
+      drawWheel();
+    };
+    listEl.appendChild(row);
+  });
+  tagCount.textContent = countFilled() + " / " + SLICE_COUNT;
+}
+
+function countFilled() {
+  return routines.filter(x=>x && x.trim()).length;
+}
+
+function escapeHtml(s) {
+  return (s||"").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+btnExport.onclick = ()=>{
+  const blob = new Blob([JSON.stringify(routines, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "dtm-routines.json";
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+};
+
+btnImport.onclick = ()=> fileImport.click();
+fileImport.onchange = async (e)=>{
+  const f = e.target.files?.[0];
+  if (!f) return;
+  try {
+    const text = await f.text();
+    const arr = JSON.parse(text);
+    if (!Array.isArray(arr)) throw new Error("Invalid JSON");
+    const normalized = new Array(SLICE_COUNT).fill("");
+    for (let i=0;i<SLICE_COUNT;i++) normalized[i] = (arr[i] ?? "");
+    routines = normalized;
+    saveRoutines(routines);
+    renderAdmin();
+    drawWheel();
+    alert("가져오기 완료!");
+  } catch (err) {
+    alert("가져오기 실패: " + err.message);
+  } finally {
+    fileImport.value = "";
+  }
+};
+
+/** ---------- PWA install prompt ---------- */
+let deferredPrompt = null;
+const btnInstall = document.getElementById("btnInstall");
+window.addEventListener("beforeinstallprompt", (e)=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  btnInstall.style.display = "inline-flex";
+});
+btnInstall.onclick = async ()=>{
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt = null;
+  btnInstall.style.display = "none";
+};
+
+/** ---------- Service Worker ---------- */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
