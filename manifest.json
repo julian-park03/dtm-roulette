@@ -1,9 +1,9 @@
 {
-  "name": "DTM Spin — PWA",
-  "short_name": "DTM Spin",
+  "name": "DTM Spin PWA",
+  "short_name": "DTMSpin",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0e0f12",
+  "background_color": "#111111",
   "theme_color": "#111111",
   "icons": [
     {
