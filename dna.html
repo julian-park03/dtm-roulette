@@ -1,95 +1,167 @@
-<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DTM DNA</title>
+<!doctype html><html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DTM DNA ULTIMATE v2</title>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
-body{background:#0f1115;color:#fff;font-family:sans-serif;margin:0;padding:0}
-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;}
-header a{color:#7cfc00;text-decoration:none;}
-.container{padding:20px}
-input{margin:5px;width:90%;max-width:300px;padding:10px;border-radius:6px;border:none;}
-button{padding:10px 14px;border-radius:8px;border:none;margin:5px;}
-dialog{border:none;border-radius:12px;padding:0;background:transparent;}
-#card{background:#171923;border-radius:16px;padding:20px;text-align:center;width:min(90vw,400px);margin:auto;}
-.level-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-weight:700;margin-top:6px;}
-.legend10{background:linear-gradient(90deg,#ffde00,#ff8c00);color:#111;animation:shine 2s infinite alternate;font-weight:900;text-shadow:0 0 12px #ffd700;}
-@keyframes shine{from{box-shadow:0 0 5px #ffde00;}to{box-shadow:0 0 20px #ff8c00;}}
-</style>
-</head>
-<body>
-<header><a href="index.html">🏠 메인으로</a><h2>DTM DNA</h2><span></span></header>
+body{background:#0f1115;color:#fff;font-family:sans-serif;margin:0}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px}
+header a{color:#7cfc00;text-decoration:none}
+.container{padding:16px;display:flex;flex-direction:column;align-items:flex-start}
+input{margin:5px 0;width:90%;max-width:300px;padding:10px;border-radius:8px;border:none}
+button{padding:10px 14px;border-radius:10px;border:none;margin:6px 0}
+.time{display:flex;align-items:center;gap:6px;margin:5px 0}
+.time input{width:72px;text-align:center}
+dialog{border:none;border-radius:14px;padding:0;background:transparent}
+#card{background:#171923;border:1px solid #2a3042;border-radius:16px;padding:18px;text-align:center;width:min(90vw,420px);margin:auto}
+.level-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-weight:800;margin-top:6px}
+.legend10{background:linear-gradient(90deg,#ffde00,#ff8c00);color:#111;text-shadow:0 0 12px #ffd700;font-weight:900;animation:shine 2s infinite alternate}
+@keyframes shine{from{box-shadow:0 0 6px #ffde00}to{box-shadow:0 0 20px #ff8c00}}
+.nickname{color:#7cfc00;font-weight:900;font-size:22px;margin:10px 0;text-shadow:0 0 8px #00ff99}
+.title-line{margin-top:6px;font-size:18px;font-weight:700;color:#ffd700}
+</style></head><body>
+<header><a href="index.html">🏠 메인으로</a><h3>DTM DNA</h3></header>
 <div class="container">
-<label>닉네임</label><input id="nick" type="text" placeholder="닉네임 입력">
+<label>닉네임</label><input id="nick" placeholder="닉네임 입력">
 <label>사진 업로드</label><input id="photo" type="file" accept="image/*">
-<img id="preview" style="width:100px;height:100px;border-radius:8px;object-fit:cover;display:none;margin-top:8px;">
+<img id="pv" style="width:100px;height:100px;border-radius:10px;object-fit:cover;display:none;margin-top:8px">
 <label>풀업</label><input id="pullup" type="number">
 <label>딥스</label><input id="dips" type="number">
 <label>푸쉬업</label><input id="pushup" type="number">
 <label>머슬업</label><input id="muscleup" type="number">
-<label>데드행(초)</label><input id="deadhang" type="number">
-<label>5km 러닝(초)</label><input id="run5k" type="number">
-<button id="make">카드 생성하기</button>
-</div>
-
-<dialog id="cardDialog">
-<div id="card">
-<img id="cphoto" style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
-<h2 id="cnick"></h2>
-<div id="levelContainer"></div>
-<canvas id="radar" width="300" height="260"></canvas><br>
-<button id="download">📸 카드 다운로드</button>
-<button onclick="cardDialog.close()">닫기</button>
-</div>
-</dialog>
-
+<label>데드행</label><div class="time"><input id="dhm" type="number" placeholder="분"><span>분</span><input id="dhs" type="number" placeholder="초"><span>초</span></div>
+<label>5km 러닝</label><div class="time"><input id="r5m" type="number" placeholder="분"><span>분</span><input id="r5s" type="number" placeholder="초"><span>초</span></div>
+<button id="make">카드 생성하기</button></div>
+<dialog id="dlg"><div id="card">
+<img id="cphoto" style="width:120px;height:120px;border-radius:12px;object-fit:cover">
+<h2 id="cnick" class="nickname"></h2>
+<div id="lvl"></div>
+<div id="title" class="title-line"></div>
+<canvas id="radar" width="380" height="380" style="margin-top:8px"></canvas><br>
+<button id="dl">📸 카드 다운로드</button>
+<button id="closebtn" onclick="dlg.close()">닫기</button>
+</div></dialog>
 <script>
-function statMap(val,a,b,c,d,e,f){if(val>=f)return 5;if(val>=e)return 4+(val-e)/(f-e);if(val>=c)return 3+(val-c)/(e-c);return (val/c)*3;}
-function pullupStat(n){return statMap(n,0,15,15,30,30,40);}
-function dipsStat(n){return statMap(n,0,39,39,60,60,70);}
-function pushupStat(n){return statMap(n,0,45,45,65,65,80);}
-function muscleupStat(n){return statMap(n,0,9,9,15,15,20);}
-function deadHangStat(s){return statMap(s,0,120,120,180,180,240);}
-function run5kStat(s){if(s<1200)return 5;if(s<=1380)return 4+(1380-s)/(1380-1200);if(s<=1500)return 3+(1500-s)/(1500-1380);if(s<=1800)return 2+(1800-s)/(1800-1500);if(s<=2400)return (2400-s)/(2400-1800)*2;return 0;}
-function compute(stats){let l=stats.pullup*0.3+stats.dips*0.2+stats.pushup*0.2+stats.muscleup*0.1+stats.deadhang*0.1+stats.run5k*0.1;return Math.round(l*2);}
-const nick=document.getElementById('nick'),photo=document.getElementById('photo'),preview=document.getElementById('preview');
-photo.onchange=e=>{const f=e.target.files[0];if(f){preview.src=URL.createObjectURL(f);preview.style.display='block';}};
-function badge(level){
- const div=document.createElement('div');div.className='level-badge';
- let color,name;
- if(level<=2){color='gray';name='Rookie';}
- else if(level<=4){color='#00ff7f';name='Challenger';}
- else if(level<=6){color='#00bfff';name='Athlete';}
- else if(level<=8){color='#a64dff';name='Master';}
- else if(level==9){color='gold';name='Legend';}
- else {div.classList.add('legend10');name='Legend 👑';div.innerHTML=`LEVEL 10 ${name}`;return div;}
- div.style.background=color;div.textContent=`LEVEL ${level} ${name}`;return div;
+// ---- stat mappings ----
+function r2(n){return Math.round(n*100)/100}
+function map(x,a,b,c,d){if(b===a)return c;const t=(x-a)/(b-a);return c+t*(d-c)}
+function pullup(n){if(n>=40)return 5;if(n>=30)return r2(map(n,30,40,4,5));if(n>=15)return r2(map(n,15,30,3,4));return r2(map(n,0,15,0,3))}
+function dips(n){if(n>=70)return 5;if(n>=60)return r2(map(n,60,70,4,5));if(n>=39)return r2(map(n,39,60,3,4));return r2(map(n,0,39,0,3))}
+function pushup(n){if(n>=80)return 5;if(n>=65)return r2(map(n,65,80,4,5));if(n>=45)return r2(map(n,45,65,3,4));return r2(map(n,0,45,0,3))}
+function muscleup(n){if(n>=20)return 5;if(n>=15)return r2(map(n,15,20,4,5));if(n>=9)return r2(map(n,9,15,3,4));return r2(map(n,0,9,0,3))}
+function deadhang(s){if(s>=240)return 5;if(s>=180)return r2(map(s,180,240,4,5));if(s>=120)return r2(map(s,120,180,3,4));return r2(map(s,0,120,0,3))}
+function run5k(s){if(s<1200)return 5;if(s<=1380)return r2(map(s,1380,1200,4,5));if(s<=1500)return r2(map(s,1500,1380,3,4));if(s<=1800)return r2(map(s,1800,1500,2,3));if(s<=2400)return r2(map(s,2400,1800,0,2));return 0}
+function level(S){return Math.round((S.pullup*0.3+S.dips*0.2+S.pushup*0.2+S.muscleup*0.1+S.deadhang*0.1+S.run5k*0.1)*2)}
+
+// ---- inputs ----
+const nick=document.getElementById('nick'), photo=document.getElementById('photo'), pv=document.getElementById('pv');
+photo.onchange=e=>{const f=e.target.files[0];if(f){pv.src=URL.createObjectURL(f);pv.style.display='block';}};
+
+// ---- radar (with label clamping) ----
+function radar(ctx,S){
+  const W=ctx.canvas.width,H=ctx.canvas.height, PAD=10;
+  const cx=W*0.5, cy=H*0.56, R=Math.min(W,H)*0.33, LABEL_R=R+44;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle='#2a3042'; ctx.lineWidth=1;
+  for(let s=1;s<=5;s++){
+    let r=R*s/5; ctx.beginPath();
+    for(let i=0;i<6;i++){ let a=-Math.PI/2+i*Math.PI*2/6, x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }
+    ctx.closePath(); ctx.stroke();
+  }
+  const vals=[S.pullup,S.dips,S.pushup,S.muscleup,S.deadhang,S.run5k].map(v=>Math.max(0,Math.min(5,v))/5);
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    let a=-Math.PI/2+i*Math.PI*2/6, r=R*vals[i], x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.closePath(); ctx.fillStyle='rgba(124,252,0,0.25)'; ctx.fill(); ctx.strokeStyle='#7cfc00'; ctx.lineWidth=2; ctx.stroke();
+
+  ctx.fillStyle='#e6edf3'; ctx.font='13px system-ui';
+  const names=['풀업','딥스','푸쉬업','머슬업','데드행','5km 러닝'];
+
+  function drawClamped(text, x, y, align, baseline){
+    const w = ctx.measureText(text).width;
+    const h = 14; // approximate line height
+    // horizontal clamp
+    if(align==='center'){
+      if(x - w/2 < PAD) x = PAD + w/2;
+      if(x + w/2 > W-PAD) x = W-PAD - w/2;
+    } else if(align==='left'){
+      if(x + w > W-PAD) x = W-PAD - w;
+      if(x < PAD) x = PAD;
+    } else if(align==='right'){
+      if(x - w < PAD) x = PAD + w;
+      if(x > W-PAD) x = W-PAD;
+    }
+    // vertical clamp
+    if(baseline==='middle'){
+      if(y - h/2 < PAD) y = PAD + h/2;
+      if(y + h/2 > H-PAD) y = H-PAD - h/2;
+    } else if(baseline==='top'){
+      if(y < PAD) y = PAD;
+      if(y + h > H-PAD) y = H-PAD - h;
+    } else if(baseline==='bottom'){
+      if(y - h < PAD) y = PAD + h;
+      if(y > H-PAD) y = H-PAD;
+    }
+    ctx.textAlign = align; ctx.textBaseline = baseline;
+    ctx.fillText(text, x, y);
+  }
+
+  for(let i=0;i<6;i++){
+    let a=-Math.PI/2+i*Math.PI*2/6;
+    let x=cx+Math.cos(a)*LABEL_R, y=cy+Math.sin(a)*LABEL_R;
+    let align = Math.cos(a)>0.25?'left':(Math.cos(a)<-0.25?'right':'center');
+    let baseline = Math.sin(a)>0.25?'top':(Math.sin(a)<-0.25?'bottom':'middle');
+    let val=[S.pullup,S.dips,S.pushup,S.muscleup,S.deadhang,S.run5k][i].toFixed(1);
+    let text = names[i]+'('+val+')';
+    drawClamped(text, x, y, align, baseline);
+  }
 }
-function drawRadar(ctx,stats){
- const vals=[stats.pullup,stats.dips,stats.pushup,stats.muscleup,stats.deadhang,stats.run5k].map(v=>v/5);
- const names=['풀업','딥스','푸쉬업','머슬업','데드행','5km'];
- const cx=150,cy=130,R=100;ctx.clearRect(0,0,300,260);
- ctx.strokeStyle='#2a3042';ctx.lineWidth=1;
- for(let s=1;s<=5;s++){let r=R*s/5;ctx.beginPath();for(let i=0;i<6;i++){let a=-Math.PI/2+i*Math.PI*2/6;let x=cx+Math.cos(a)*r;let y=cy+Math.sin(a)*r;if(i==0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.stroke();}
- ctx.beginPath();for(let i=0;i<6;i++){let a=-Math.PI/2+i*Math.PI*2/6;let r=R*vals[i];let x=cx+Math.cos(a)*r;let y=cy+Math.sin(a)*r;if(i==0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.fillStyle='rgba(124,252,0,0.2)';ctx.fill();ctx.strokeStyle='#7cfc00';ctx.lineWidth=2;ctx.stroke();
- ctx.font='12px sans-serif';ctx.fillStyle='#fff';
- for(let i=0;i<6;i++){let a=-Math.PI/2+i*Math.PI*2/6;let x=cx+Math.cos(a)*(R+20);let y=cy+Math.sin(a)*(R+20);ctx.textAlign='center';ctx.fillText(`${names[i]}(${stats[Object.keys(stats)[i]].toFixed(1)})`,x,y);}
-}
-document.getElementById('make').onclick=()=>{
- let s={pullup:pullupStat(+pullup.value||0),dips:dipsStat(+dips.value||0),pushup:pushupStat(+pushup.value||0),muscleup:muscleupStat(+muscleup.value||0),deadhang:deadHangStat(+deadhang.value||0),run5k:run5kStat(+run5k.value||0)};
- let lvl=compute(s);
- document.getElementById('cnick').textContent=nick.value||'익명';
- const ldiv=badge(lvl);const lc=document.getElementById('levelContainer');lc.innerHTML='';lc.appendChild(ldiv);
- document.getElementById('cphoto').src=preview.src||'';
- drawRadar(document.getElementById('radar').getContext('2d'),s);
- cardDialog.showModal();
+
+// ---- badge ----
+function badge(L){const d=document.createElement('div');d.className='level-badge';let c,n;if(L<=2){c='gray';n='Rookie'}else if(L<=4){c='#00ff7f';n='Challenger'}else if(L<=6){c='#00bfff';n='Athlete'}else if(L<=8){c='#a64dff';n='Master'}else if(L==9){c='gold';n='Legend'}else{d.classList.add('legend10');d.textContent='LEVEL 10 Legend 👑';return d;}d.style.background=c;d.textContent='LEVEL '+L+' '+n;return d;}
+
+// ---- title sets ----
+const titles = {
+1:{adj:["귀여운","앙증맞은","보드라운","달콤한","느긋한","통통한","부드러운","해맑은","깜찍한","상큼한","사랑스러운","포근한","맑은","유쾌한","졸린","조그마한","조심스러운","수줍은","낙천적인","순한","말랑한","포동포동한","살짝긴장한","허둥대는","재잘거리는","반짝이는","졸린눈의","해사한","햇살같은","평화로운"],
+   noun:["병아리","슬라임","조약돌","바게뜨","바나나","젤리","햄스터","다람쥐","토끼","리본","딸기","사탕","수박씨","콩알","꽃송이","파스텔","구름","솜사탕","민들레","풍선","컵케이크","달팽이","참새","땅콩","호빵","양말","마카롱","귤","하트","고양이"]},
+2:{adj:["발랄한","신나는","쾌활한","활기찬","명랑한","상쾌한","경쾌한","산뜻한","반짝반짝한","들뜬","재빠른","톡톡튀는","통통튀는","오바하는","똥꼬발랄한","허당스러운","떨리는","실연당한","여드름난","당황한","멍때리는","수다스러운","웃긴","조잘대는","흥겨운","상기된","하이텐션의","부지런한","튼튼한","생기있는"],
+   noun:["고양이","강아지","유니콘","토스트","스파클","해바라기","복숭아","물방울","무지개","요정","젤리곰","붕어빵","발가락","짬타이거","라떼","도넛","호떡","바나나킥","쥬시쿨","펭귄","펭수","조랑말","파도","후르츠링","라면땅","비눗방울","탕후루","솜사탕","해적","치즈볼"]},
+3:{adj:["끈질긴","성실한","진지한","열정적인","근면한","집중하는","근성있는","단호한","묵묵한","포기않는","멘탈강한","차분한","프로의식있는","커피중독의","자제심있는","꾸준한","무표정한","느긋한","침착한","담백한","근육통있는","담력있는","피곤한","땀범벅의","노력하는","강직한","꾸준무탈한","절제하는","성장하는","열의있는"],
+   noun:["돌멩이","모래알","불씨","러너","루키","체육생","파이팅보이","서퍼","스쿼터","푸쉬업러","매일아침5시","출근러","단백질쉐이크","닭가슴살","오트밀","헬린이","운동부원","지각생","시합자","턱걸이러","손마디","스트랩","탄수화물","프로틴","마라토너","버피왕","알람3개맨","에너지바","파워워커","체력공부가"]},
+4:{adj:["단단한","근육질의","강철같은","매서운","강한","빠른","활발한","열혈의","스피디한","집중된","운동하는","단련된","턱걸이중독의","명상하는","프로틴냄새나는","헬창같은","체육관냄새나는","건강한","에너지넘치는","기합찬","세련된","균형잡힌","역동적인","노련한","터프한","불굴의","근성가득한","성공지향의","파워풀한","끓어오르는"],
+   noun:["철봉","케틀벨","덤벨","바벨","스프린터","스쿼터","벤치프레스","보디빌더","운동화","단백질바","스파르탄","철인","레깅스","장딴지","팔근육","어깨깡패","복근","허벅지","운동인","피트니스","런닝화","플랭커","마초","스트롱맨","체육관","보조바","턱걸이대","벽돌","파워맨","짐매니아"]},
+5:{adj:["불타는","날카로운","열정적인","강인한","근육통의","단백질향기나는","분노조절잘못한","극기훈련중인","핵열정의","지치지않는","기합찬","폭풍의","전투적인","타오르는","스웻냄새나는","광기어린","요란한","단심의","스포티한","매운","아드레날린가득한","집중하는","박력있는","괴력의","예민한","단단한","끓어오르는","두근거리는","매섭게빠른","불굴의"],
+   noun:["해머","오소리","선인장","평행봉","멧돼지","철마","스파르탄","파워리프터","조교","바벨","덤벨","근육맨","닭가슴살","탄수화물괴물","헬창","체육관장","짬타이거","라면스프","구이판","철기인간","역도왕","풀업러","딥서퍼","허벅지대장","핵인싸","중량신","덤벨요정","오리걸음","식단전사","맨몸왕"]},
+6:{adj:["노련한","침착한","냉철한","강단있는","안정적인","근육지향적인","밸런스잡힌","초집중의","위엄있는","체계적인","분석적인","탄탄한","무표정의","담백한","고독한","능숙한","기계같은","계획적인","이성적인","강직한","겸손한","고요한","깔끔한","정확한","마스터급의","노하우있는","숙련된","단정한","절제된","균형미있는"],
+   noun:["트레이너","리더","코치","단련가","마스터","조교","전문가","피트니스킹","보스","선배님","멘토","팀장","PT강사","근육선생","운동철학자","근육장인","체형교정가","프로","근육조련사","아티스트","교관","심판","고수","바디빌더","킹스맨","팔씨름왕","조언자","전략가","실전가","설계자"]},
+7:{adj:["강철의","전설의","폭풍의","타이탄의","무쇠같은","초집중의","근육의","냉정한","전투적인","압도적인","전장의","결의에찬","의지의","터프한","무자비한","자제심강한","에너지폭발의","스파르탄식","극한의","괴력의","든든한","불멸의","끓어오르는","핵심적인","무위의","전광석화의","무너뜨리는","얼음같은","용맹한","태풍의"],
+   noun:["타이탄","파이터","헐크","괴수","포효자","근육맨","철인","파워맨","맹수","브론즈맨","근육기계","덤벨신","운동괴물","헬스킹","스파르탄","마초킹","팔씨름왕","슈퍼히어로","헬벤져스","분노의하체","철권","근육호랑이","파워레인저","광인","펌핑괴물","보디가드","짐캐리","스쿼트마스터","레그킹","핵펌프맨"]},
+8:{adj:["초월적인","무한한","불멸의","압도적인","강렬한","불가침의","초사이언의","근육에취한","정신줄놓은","무표정한","광기에찬","초집중의","에너지폭발의","끓어오르는","불사신같은","단백질증발한","피로따윈없는","광속의","빛보다빠른","단호한","파괴적인","강철같은","절대적인","핵융합급의","도깨비같은","용암같은","핵폭풍의","무중력의","시공초월의","초신성의"],
+   noun:["용사","근육신","폭풍호랑이","드래곤","파괴자","헬스갓","마초킹","근육요정","밥솥","벤치프레스","스쿼트기계","핵연료","닭가슴팡","매드타이거","PT기계","수호신","불사조","매드맨","에너지탱크","근육화산","마초전설","근육대마왕","단백질폭탄","헬스몬스터","근육요괴","보디킹","탄수화물핵","단백질운석","벤치마스터","지옥근육"]},
+9:{adj:["파괴적인","지옥의","절대적인","광폭한","극악무도한","폭발적인","끝없는","전설적인","초강력한","무자비한","괴물같은","압도적인","초월적인","광기어린","미친","정신나간","폭주하는","핵융합의","핵폭풍의","터질듯한","전투본능의","단백질폭주한","극단적인","비상식적인","천둥치는","용암분출의","무한동력의","심연의","암흑의","철혈의"],
+   noun:["호랑이","블랙홀","절대군주","암흑왕","핵불닭볶음면","잭나이프","폭군","사우론","데스엔진","킹콩","슈퍼컴퓨터","용신","그랜드마스터","천둥신","미치광이","광전사","근육용","암흑기사","디젤탱크","전설호랑이","파괴신","전쟁기계","지옥견","스피드악마","핵짐승","짬타이거","PT괴수","살인기계","맨몸괴물","무한엔진"]},
+10:{adj:["신성한","천상의","초월한","무적의","불멸의","절대적인","궁극의","전능한","황금빛","신화적인","초사이언의","우주의","왕중왕의","최강의","지배적인","영광스러운","빛나는","신비로운","성스러운","초월체의","초지능의","초강력의","무상한","무결한","시공초월의","세계최강의","궁극무적의","절대영도의","천상계의","끝판왕의"],
+   noun:["갓","제왕","신","크리에이터","근육황제","대천사","초월체","지배자","우주신","DTM의신","절대황제","근육성좌","폭풍지배자","최후의보스","성좌","근육왕","황금근육","성검","근육의신","근육아키텍트","절대신","만왕의왕","지상최강","거신","초월군주","근육성인","무적함대","끝판왕","황금불사조","성체"]}
 };
-document.getElementById('download').onclick=()=>{
- const btn=document.getElementById('download');btn.style.display='none';
- html2canvas(document.getElementById('card')).then(c=>{const link=document.createElement('a');link.download=`DTM_DNA_${nick.value||'user'}.png`;link.href=c.toDataURL();link.click();btn.style.display='';});
+
+// ---- build card ----
+const make=document.getElementById('make'),dlg=document.getElementById('dlg'),cn=document.getElementById('cnick'),lvlEl=document.getElementById('lvl'),cphoto=document.getElementById('cphoto'),rd=document.getElementById('radar'),title=document.getElementById('title');
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function computeLevel(S){return Math.min(10,Math.max(0,level(S)))}
+function buildBadge(L){return badge(L)}
+make.onclick=()=>{
+  const pull=+document.getElementById('pullup').value||0,dp=+document.getElementById('dips').value||0,push=+document.getElementById('pushup').value||0,mus=+document.getElementById('muscleup').value||0;
+  const dh=(+document.getElementById('dhm').value||0)*60+(+document.getElementById('dhs').value||0);
+  const r5=(+document.getElementById('r5m').value||0)*60+(+document.getElementById('r5s').value||0);
+  const S={pullup:pullup(pull),dips:dips(dp),pushup:pushup(push),muscleup:muscleup(mus),deadhang:deadhang(dh),run5k:run5k(r5)};
+  const L=computeLevel(S);
+  cn.textContent=nick.value||'익명'; lvlEl.innerHTML=''; lvlEl.appendChild(buildBadge(L)); cphoto.src=pv.src||'';
+  const band = L>=9?9:(L>=5?5:(L>=3?3:1));
+  const adj = pick(titles[band].adj), noun = pick(titles[band].noun);
+  title.textContent = adj+' '+noun;
+  radar(rd.getContext('2d'),S); dlg.showModal();
 };
-</script>
-</body>
-</html>
+// ---- download (exclude close) ----
+document.getElementById('dl').onclick=()=>{const btn=document.getElementById('dl'),close=document.getElementById('closebtn');btn.style.display='none';close.style.display='none';html2canvas(document.getElementById('card')).then(c=>{let a=document.createElement('a');a.download='DTM_DNA_'+(nick.value||'user')+'.png';a.href=c.toDataURL();a.click();btn.style.display='';close.style.display='';});};
+</script></body></html>
