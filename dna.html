@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DTM DNA</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+body{background:#0f1115;color:#fff;font-family:sans-serif;margin:0;padding:0}
+header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;}
+header a{color:#7cfc00;text-decoration:none;}
+.container{padding:20px}
+input{margin:5px;width:100%;padding:10px;border-radius:6px;border:none;}
+button{padding:10px 14px;border-radius:8px;border:none;margin:5px;}
+#card{background:#171923;border-radius:16px;padding:20px;text-align:center;width:min(90vw,400px);margin:auto;}
+.level-badge{display:inline-block;padding:4px 10px;border-radius:12px;font-weight:700;margin-top:6px;}
+.legend10{background:linear-gradient(90deg,#ffde00,#ff8c00);color:#111;animation:shine 2s infinite alternate;font-weight:900;text-shadow:0 0 12px #ffd700;}
+@keyframes shine{from{box-shadow:0 0 5px #ffde00;}to{box-shadow:0 0 20px #ff8c00;}}
+</style>
+</head>
+<body>
+<header><a href="index.html">🏠 메인으로</a><h2>DTM DNA</h2><span></span></header>
+<div class="container">
+<label>닉네임</label><input id="nick" type="text" placeholder="닉네임 입력">
+<label>사진 업로드</label><input id="photo" type="file" accept="image/*">
+<img id="preview" style="width:100px;height:100px;border-radius:8px;object-fit:cover;display:none;margin-top:8px;">
+<label>풀업</label><input id="pullup" type="number">
+<label>딥스</label><input id="dips" type="number">
+<label>푸쉬업</label><input id="pushup" type="number">
+<label>머슬업</label><input id="muscleup" type="number">
+<label>데드행(초)</label><input id="deadhang" type="number">
+<label>5km 러닝(초)</label><input id="run5k" type="number">
+<button id="make">카드 생성하기</button>
+<div id="card" style="display:none;">
+<img id="cphoto" style="width:120px;height:120px;border-radius:10px;object-fit:cover;">
+<h2 id="cnick"></h2>
+<div id="levelContainer"></div>
+<canvas id="radar" width="300" height="260"></canvas><br>
+<button id="download">📸 카드 다운로드</button>
+</div>
+</div>
+<script>
+function statMap(val,a,b,c,d,e,f){if(val>=f)return 5; if(val>=e)return 4+(val-e)/(f-e); if(val>=c)return 3+(val-c)/(e-c); return (val/c)*3;}
+function pullupStat(n){return statMap(n,0,15,15,30,30,40);}
+function dipsStat(n){return statMap(n,0,39,39,60,60,70);}
+function pushupStat(n){return statMap(n,0,45,45,65,65,80);}
+function muscleupStat(n){return statMap(n,0,9,9,15,15,20);}
+function deadHangStat(s){return statMap(s,0,120,120,180,180,240);}
+function run5kStat(s){if(s<1200)return 5;if(s<=1380)return 4+(1380-s)/(1380-1200);if(s<=1500)return 3+(1500-s)/(1500-1380);if(s<=1800)return 2+(1800-s)/(1800-1500);if(s<=2400)return (2400-s)/(2400-1800)*2;return 0;}
+function compute(stats){let l=stats.pullup*0.3+stats.dips*0.2+stats.pushup*0.2+stats.muscleup*0.1+stats.deadhang*0.1+stats.run5k*0.1;return Math.round(l*2);}
+const nick=document.getElementById('nick'),photo=document.getElementById('photo'),preview=document.getElementById('preview');
+photo.onchange=e=>{const f=e.target.files[0];if(f){preview.src=URL.createObjectURL(f);preview.style.display='block';}};
+function badge(level){
+ const div=document.createElement('div');div.className='level-badge';
+ let color,name;
+ if(level<=2){color='gray';name='Rookie';}
+ else if(level<=4){color='#00ff7f';name='Challenger';}
+ else if(level<=6){color='#00bfff';name='Athlete';}
+ else if(level<=8){color='#a64dff';name='Master';}
+ else if(level==9){color='gold';name='Legend';}
+ else {div.classList.add('legend10');name='Legend 👑';return div.innerHTML=`LEVEL 10 ${name}`,div;}
+ div.style.background=color;div.textContent=`LEVEL ${level} ${name}`;return div;
+}
+function drawRadar(ctx,stats){
+ const vals=[stats.pullup,stats.dips,stats.pushup,stats.muscleup,stats.deadhang,stats.run5k].map(v=>v/5);
+ const cx=150,cy=130,R=100;ctx.clearRect(0,0,300,260);
+ ctx.strokeStyle='#2a3042';for(let s=1;s<=5;s++){let r=R*s/5;ctx.beginPath();for(let i=0;i<6;i++){let a=-Math.PI/2+i*Math.PI*2/6;let x=cx+Math.cos(a)*r;let y=cy+Math.sin(a)*r;if(i==0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.stroke();}
+ ctx.beginPath();for(let i=0;i<6;i++){let a=-Math.PI/2+i*Math.PI*2/6;let r=R*vals[i];let x=cx+Math.cos(a)*r;let y=cy+Math.sin(a)*r;if(i==0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.fillStyle='rgba(124,252,0,0.2)';ctx.fill();ctx.strokeStyle='#7cfc00';ctx.lineWidth=2;ctx.stroke();
+}
+document.getElementById('make').onclick=()=>{
+ let s={pullup:pullupStat(+pullup.value||0),dips:dipsStat(+dips.value||0),pushup:pushupStat(+pushup.value||0),muscleup:muscleupStat(+muscleup.value||0),deadhang:deadHangStat(+deadhang.value||0),run5k:run5kStat(+run5k.value||0)};
+ let lvl=compute(s);
+ document.getElementById('cnick').textContent=nick.value||'익명';
+ const ldiv=badge(lvl);const lc=document.getElementById('levelContainer');lc.innerHTML='';lc.appendChild(ldiv);
+ document.getElementById('cphoto').src=preview.src||'';
+ document.getElementById('card').style.display='block';
+ drawRadar(document.getElementById('radar').getContext('2d'),s);
+};
+document.getElementById('download').onclick=()=>{
+ html2canvas(document.getElementById('card')).then(c=>{const link=document.createElement('a');link.download=`DTM_DNA_${nick.value||'user'}.png`;link.href=c.toDataURL();link.click();});
+};
+</script>
+</body>
+</html>

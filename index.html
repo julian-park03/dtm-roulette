@@ -1,178 +1,21 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>무슨 운동 하지?</title>
-  <meta name="theme-color" content="#111111" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <style>
-    body { margin:0; font-family: system-ui, sans-serif; background:#111; color:#fff; display:flex; flex-direction:column; height:100vh;}
-    header {padding:20px; display:flex; justify-content:space-between; align-items:center; font-size:28px; font-weight:bold;}
-    #app {flex:1; display:flex; align-items:center; justify-content:center;}
-    canvas {width:90vw; max-width:600px; aspect-ratio:1; border-radius:50%; background:#222;}
-    .pin {position:absolute; top:2%; left:50%; transform:translateX(-50%); width:0;height:0; border-left:25px solid transparent; border-right:25px solid transparent; border-bottom:40px solid yellow;}
-    dialog {border:none; border-radius:20px; padding:40px; background:#222; color:#fff; max-width:90vw;}
-    dialog h2 {font-size:36px; margin:0 0 20px 0; text-align:center;}
-    dialog p {font-size:32px; font-weight:800; margin:0; text-align:center;}
-    button {padding:10px 16px; border-radius:10px; border:none; background:#444; color:#fff; margin:10px; font-size:16px;}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DTM playground</title>
+<link rel="manifest" href="manifest.json">
+<style>
+body{font-family:sans-serif;background:#111;color:#fff;display:flex;justify-content:center;align-items:center;height:100vh;margin:0}
+a{display:block;margin:20px;padding:20px;background:#222;border-radius:10px;text-decoration:none;color:#7cfc00;text-align:center;font-size:20px;}
+</style>
 </head>
 <body>
-<header>
-  <span>무슨 운동 하지?</span>
-  <button id="btnAdmin">⚙️ Admin</button>
-</header>
-<div id="app">
-  <div style="position:relative;">
-    <div class="pin"></div>
-    <canvas id="wheel" width="600" height="600"></canvas>
-  </div>
+<div>
+<h1>DTM Playground</h1>
+<a href="roulette.html">오늘 무슨 운동 하지?</a>
+<a href="dna.html">DTM DNA</a>
 </div>
-
-<dialog id="dlgResult">
-  <h2>오늘의 루틴</h2>
-  <p id="resultText"></p>
-  <button onclick="dlgResult.close()">닫기</button>
-</dialog>
-
-<dialog id="dlgAdmin">
-  <h2>Admin 메뉴</h2>
-  <div id="list"></div>
-  <button id="btnExport">내보내기</button>
-  <input id="fileImport" type="file" accept="application/json" style="display:none" />
-  <button id="btnImport">가져오기</button>
-  <button onclick="dlgAdmin.close()">닫기</button>
-</dialog>
-
-<script>
-const STORAGE_KEY = "dtm.spin.routines.v4";
-const ROUTINE_MAX = 100;
-let routines = loadRoutines();
-
-function loadRoutines(){
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultRoutines();
-    const arr = JSON.parse(raw);
-    if(!Array.isArray(arr)) return defaultRoutines();
-    let out=new Array(ROUTINE_MAX).fill("");
-    for(let i=0;i<ROUTINE_MAX;i++){out[i]=arr[i]||"";}
-    return out;
-  }catch{return defaultRoutines();}
-}
-function saveRoutines(){localStorage.setItem(STORAGE_KEY, JSON.stringify(routines));}
-function defaultRoutines(){
-  const seed=["풀업 10개","푸쉬업 30개","딥스 20개","버피 30개","스쿼트 50개","데드행 60초"];
-  let arr=new Array(ROUTINE_MAX).fill("");
-  for(let i=0;i<seed.length;i++) arr[i]=seed[i];
-  return arr;
-}
-
-// draw wheel with 4 slots
-const canvas=document.getElementById("wheel");
-const ctx=canvas.getContext("2d");
-let angle=0, spinning=false, angularVelocity=0;
-
-const COLORS=["#e63946","#f1fa8c","#06d6a0","#118ab2"];
-function drawWheel(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const slices=4;
-  const cx=canvas.width/2, cy=canvas.height/2;
-  const radius=canvas.width/2;
-  const sliceAngle=2*Math.PI/slices;
-  ctx.save();
-  ctx.translate(cx,cy);
-  ctx.rotate(angle);
-  for(let i=0;i<slices;i++){
-    const a0=i*sliceAngle, a1=a0+sliceAngle;
-    ctx.beginPath();
-    ctx.moveTo(0,0);
-    ctx.arc(0,0,radius,a0,a1);
-    ctx.closePath();
-    ctx.fillStyle=COLORS[i%COLORS.length];
-    ctx.fill();
-    ctx.save();
-    ctx.rotate(a0+sliceAngle/2);
-    ctx.translate(radius*0.6,0);
-    ctx.rotate(Math.PI/2);
-    ctx.fillStyle="#000";
-    ctx.font="bold 70px sans-serif";
-    ctx.textAlign="center";
-    ctx.textBaseline="middle";
-    ctx.fillText("?",0,0);
-    ctx.restore();
-  }
-  ctx.restore();
-}
-drawWheel();
-
-// spin logic with strong start and smooth deceleration
-canvas.addEventListener("click",()=>{
-  if(spinning) return;
-  spinning=true;
-  angularVelocity=30+Math.random()*10; // fast start
-  let elapsed=0;
-  let last=performance.now();
-  requestAnimationFrame(function step(t){
-    let dt=(t-last)/1000; last=t;
-    elapsed+=dt;
-    angularVelocity*=0.96;
-    angle+=angularVelocity*dt;
-    drawWheel();
-    if(angularVelocity<0.1 || elapsed>5){
-      spinning=false;
-      angle=(angle%(2*Math.PI)+2*Math.PI)%(2*Math.PI);
-      const sliceAngle=2*Math.PI/4;
-      let idx=Math.round(angle/sliceAngle) % 4;
-      angle=idx*sliceAngle;
-      drawWheel();
-      showResult();
-      return;
-    }
-    requestAnimationFrame(step);
-  });
-});
-
-function showResult(){
-  let filled=routines.filter(r=>r && r.trim());
-  if(filled.length===0){alert("루틴 없음");return;}
-  let choice=filled[Math.floor(Math.random()*filled.length)];
-  document.getElementById("resultText").textContent=choice;
-  dlgResult.showModal();
-}
-
-// Admin menu button
-const btnAdmin=document.getElementById("btnAdmin");
-const dlgAdmin=document.getElementById("dlgAdmin");
-btnAdmin.onclick=()=>{
-  renderAdmin();
-  dlgAdmin.showModal();
-};
-function renderAdmin(){
-  let list=document.getElementById("list");
-  list.innerHTML="";
-  for(let i=0;i<ROUTINE_MAX;i++){
-    let inp=document.createElement("input");
-    inp.type="text"; inp.value=routines[i];
-    inp.placeholder="루틴 "+(i+1);
-    inp.onchange=()=>{routines[i]=inp.value; saveRoutines();};
-    list.appendChild(inp);
-    list.appendChild(document.createElement("br"));
-  }
-}
-document.getElementById("btnExport").onclick=()=>{
-  let blob=new Blob([JSON.stringify(routines)],{type:"application/json"});
-  let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="routines.json"; a.click();
-};
-document.getElementById("btnImport").onclick=()=>fileImport.click();
-document.getElementById("fileImport").onchange=async(e)=>{
-  let f=e.target.files[0]; if(!f) return;
-  let text=await f.text();
-  let arr=JSON.parse(text);
-  if(Array.isArray(arr)){routines=new Array(ROUTINE_MAX).fill(""); for(let i=0;i<ROUTINE_MAX;i++) routines[i]=arr[i]||""; saveRoutines();}
-};
-</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("service-worker.js");}</script>
 </body>
 </html>

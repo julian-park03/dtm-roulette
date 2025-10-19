@@ -1,10 +1,10 @@
 {
-  "name": "무슨 운동 하지?",
-  "short_name": "운동루틴",
-  "start_url": ".",
+  "name": "DTM playground",
+  "short_name": "DTM",
+  "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#111111",
-  "theme_color": "#111111",
+  "background_color": "#0f1115",
+  "theme_color": "#0f1115",
   "icons": [
     {
       "src": "icons/icon-192.png",
