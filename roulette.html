@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>오늘 무슨 운동 하지?</title>
+<style>
+body{background:#111;color:#fff;font-family:sans-serif;margin:0;text-align:center}
+canvas{width:90vw;max-width:500px;margin-top:30px;border-radius:50%;background:#222;}
+button{margin:20px;padding:10px 20px;border:none;border-radius:8px;background:#7cfc00;color:#000;font-weight:bold;}
+.pin{width:0;height:0;border-left:20px solid transparent;border-right:20px solid transparent;border-bottom:30px solid yellow;margin:auto;position:relative;top:10px;}
+</style>
+</head>
+<body>
+<h2>오늘 무슨 운동 하지?</h2>
+<div class="pin"></div>
+<canvas id="wheel" width="500" height="500"></canvas><br>
+<button id="spin">돌리기</button>
+<script>
+const canvas=document.getElementById('wheel');const ctx=canvas.getContext('2d');
+let angle=0,velocity=0,spinning=false;
+const colors=['#e63946','#f1fa8c','#06d6a0','#118ab2'];const slices=4;
+function draw(){
+ ctx.clearRect(0,0,500,500);const r=250;ctx.save();ctx.translate(250,250);ctx.rotate(angle);
+ for(let i=0;i<slices;i++){let a0=i*2*Math.PI/slices,a1=a0+2*Math.PI/slices;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,r,a0,a1);ctx.fillStyle=colors[i];ctx.fill();ctx.save();ctx.rotate(a0+Math.PI/slices);ctx.translate(r*0.6,0);ctx.rotate(Math.PI/2);ctx.fillStyle='#000';ctx.font='bold 70px sans-serif';ctx.textAlign='center';ctx.fillText('?',0,0);ctx.restore();}
+ ctx.restore();
+}
+draw();
+document.getElementById('spin').onclick=()=>{if(spinning)return;spinning=true;velocity=25+Math.random()*10;animate();}
+function animate(){if(!spinning)return;angle+=velocity*0.05;velocity*=0.97;draw();if(velocity<0.1){spinning=false;alert('오늘의 루틴: 랜덤 루틴!');return;}requestAnimationFrame(animate);}
+</script>
+</body>
+</html>
